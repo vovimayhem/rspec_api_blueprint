@@ -17,9 +17,10 @@ RSpec.configure do |config|
     end
   end
 
-  config.after(:each, type: :request) do
-    response ||= last_response
-    request ||= last_request
+  config.after(:each, type: :request) do |example|
+
+    response ||= respond_to?(:last_response) ? last_response : @response
+    request ||= respond_to?(:last_request) ? last_request : @request
 
     if response
       example_group = example.metadata[:example_group]
@@ -35,9 +36,9 @@ RSpec.configure do |config|
       file_name = $1.underscore
 
       if defined? Rails
-        file = File.join(Rails.root, "/api_docs/#{file_name}.txt")
+        file = File.join(Rails.root, "/api_docs/#{file_name}.md")
       else
-        file = File.join(File.expand_path('.'), "/api_docs/#{file_name}.txt")
+        file = File.join(File.expand_path('.'), "/api_docs/#{file_name}.md")
       end
 
       File.open(file, 'a') do |f|
@@ -66,8 +67,8 @@ RSpec.configure do |config|
 
         # Response
         f.write "+ Response #{response.status} #{response.content_type}\n\n"
-
-        if response.body.present? && response.content_type =~ /application\/json/
+        
+        if response.body.present? && response.content_type == 'application/json'
           f.write "#{JSON.pretty_generate(JSON.parse(response.body))}\n\n".indent(8)
         end
       end unless response.status == 401 || response.status == 403 || response.status == 301
